@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 
     if(cli_mode == CLIENT){
        Client client;
-       client.setup(config.getProfile());
+       //client.setup(config.getProfile());
        if(!client.start()){
            return 1;
        }

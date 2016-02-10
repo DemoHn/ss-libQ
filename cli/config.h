@@ -12,12 +12,12 @@ public:
     Config();
     Config(const QString &file);
     bool readConfig();
-    QSS::Profile & getProfile();
+//    QSS::Profile & getProfile();
     //bool generateConfigFileModel();
 
 private:
     QString filename;
-    QSS::Profile profile;
+//    QSS::Profile profile;
 };
 
 #endif // CONFIG_H

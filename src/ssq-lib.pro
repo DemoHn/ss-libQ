@@ -2,13 +2,17 @@ QT -= gui
 
 QT += core network
 
-TARGET = ssq-lib
+TARGET = ssq
 
 TEMPLATE = lib
 
 DEFINES += SSQ_LIB_STATIC
 
+# static link
+CONFIG += static
+
 HEADERS += \
+    sslibQ \
     protocol/ab_protocol.h \
     controller.h \
     export.h \
@@ -23,3 +27,6 @@ SOURCES += \
     udprelay.cpp \
     tcpserver.cpp
 
+win32 :{
+    DESTDIR = $$PWD/../build
+}

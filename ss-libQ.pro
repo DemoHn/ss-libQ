@@ -1,6 +1,7 @@
 TEMPLATE = subdirs
 
-SUBDIRS += cli/ssq-cli.pro \
-           test/ssq-test.pro \
-           src/ssq-lib.pro
+SUBDIRS += src/ssq-lib.pro \
+           cli/ssq-cli.pro # \
+#           test/ssq-test.pro
 
+ssq-cli.depends += ssq

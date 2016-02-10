@@ -22,13 +22,15 @@ class AbstractProtocol {
     };
 
 public:
-    virtual QByteArray pack(const QByteArray &ip_address,const uint16 port,const QByteArray &in) = 0;
+    AbstractProtocol();
+    virtual QByteArray pack(const QByteArray &ip_address,const quint16 port,const QByteArray &in) = 0;
     virtual Package unpack(const QByteArray &in) = 0;
     virtual void setProfile(const QJsonDocument &profile) = 0;
     virtual QJsonDocument & getProfile() = 0;
     virtual QString getProtocol() = 0;
     virtual void setProtocol(const QString protocol_string) = 0;
 
+    //virtual ~AbstractProtocol();
     virtual bool init() = 0;
 };
 

@@ -30,7 +30,7 @@ bool Config::readConfig()
     QJsonDocument confJson = QJsonDocument::fromJson(configArray,error);
 
     if(error->error == QJsonParseError::NoError){
-        QJsonObject confObj = confJson.object();
+       /* QJsonObject confObj = confJson.object();
 
         profile.local_address = confObj["local_address"].toString();
         profile.local_port    = confObj["local_port"].toInt();
@@ -40,7 +40,7 @@ bool Config::readConfig()
         profile.server_port   = confObj["server_port"].toInt();
         profile.timeout       = confObj["timeout"].toInt();
         profile.http_proxy    = false;
-
+*/
         return true;
     }else{
         qDebug() << "JSON parse error: " << error->errorString();
@@ -48,8 +48,9 @@ bool Config::readConfig()
         return false;
     }
 }
-
+/*
 QSS::Profile & Config::getProfile()
 {
     return profile;
 }
+*/
