@@ -7,33 +7,40 @@
 #include <QTimer>
 #include "protocol/ab_protocol.h"
 #include "export.h"
+#include <QTcpServer>
 
-class SSQ_EXPORT TcpRelay : public QObject
+class SSQ_EXPORT TCPRelay : public QObject
 {
     Q_OBJECT
 public:
-    const static int BUF_SIZE = 1024 * 32;
     enum STAGE {INIT, ADDR, UDP_ASSOC, DNS, CONNECTING, STREAM, DESTROYED};
 
-    explicit TcpRelay(AbstractProtocol *protocol,
-                      QTcpSocket *local,
+    explicit TCPRelay(AbstractProtocol *protocol,
                       const bool is_local,
                       QObject *parent = 0);
 
-    ~TcpRelay();
+    ~TCPRelay();
+    bool listen();
     void close();
 private:
     QTcpSocket *local;
     QTcpSocket *remote;
+    QTcpServer *server;
+
     bool is_local;
     STAGE stage;
-    QByteArray data;
     AbstractProtocol *protocol;
     QTimer timer;
+
+    QHostAddress local_address;
+    QHostAddress remote_address;
+    quint16 local_port;
+    quint16 remote_port;
 
 signals:
     //void send();
 public slots:
+    void handleLocalConnection();
     void onLocalRead();
     void onRemoteRead();
 };

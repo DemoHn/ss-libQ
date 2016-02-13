@@ -25,6 +25,7 @@ signals:
 
 public slots:
     void handleConnection();
+    void readData();
 };
 
 #endif // TCPSERVER_H

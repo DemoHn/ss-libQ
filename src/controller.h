@@ -4,16 +4,16 @@
 #include <QObject>
 #include "protocol/ab_protocol.h"
 #include "export.h"
-#include "tcpserver.h"
+#include "tcprelay.h"
 
 class SSQ_EXPORT Controller : public QObject
 {
     Q_OBJECT
 
 public:
-    enum MODE { SERVER, LOCAL, MANAGER, REDIR };
+    enum MODE { SERVER, CLIENT, MANAGER, REDIR };
 
-    explicit Controller(AbstractProtocol *protocol, MODE mode = LOCAL, QObject *parent = 0);
+    explicit Controller(AbstractProtocol *protocol, MODE mode = CLIENT, QObject *parent = 0);
     ~Controller();
 
     bool start();
@@ -22,7 +22,7 @@ public:
 private:
     AbstractProtocol *protocol;
     MODE mode;
-    TcpServer *server;
+    TCPRelay *tcpRelay;
    // UdpRelay *udpRelay;
 
 signals:

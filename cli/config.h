@@ -11,13 +11,10 @@ class Config
 public:
     Config();
     Config(const QString &file);
-    bool readConfig();
-//    QSS::Profile & getProfile();
-    //bool generateConfigFileModel();
+    QJsonObject parseConfig();
 
 private:
     QString filename;
-//    QSS::Profile profile;
 };
 
 #endif // CONFIG_H

@@ -12,26 +12,30 @@
 */
 
 #include <QJsonDocument>
-
+#include <QHostAddress>
 class AbstractProtocol {
+
+public:
     struct Package{
         qint8 ip_protocol; // IP protocol (IPV4 = 4, IPV6 = 6)
         QByteArray ip_address; // IP address (IPV4 or IPV6 ?)
         quint16 port;
         QByteArray content; // package content (decrypted)
     };
-
-public:
-    AbstractProtocol();
     virtual QByteArray pack(const QByteArray &ip_address,const quint16 port,const QByteArray &in) = 0;
     virtual Package unpack(const QByteArray &in) = 0;
-    virtual void setProfile(const QJsonDocument &profile) = 0;
-    virtual QJsonDocument & getProfile() = 0;
-    virtual QString getProtocol() = 0;
-    virtual void setProtocol(const QString protocol_string) = 0;
+
+    virtual QString getProtocolName() = 0;
+
+    //params
+    virtual QHostAddress getLocalAddress() = 0;
+    virtual QHostAddress getServerAddress() = 0;
+
+    virtual quint16 getLocalPort() = 0;
+    virtual quint16 getServerPort() = 0;
 
     //virtual ~AbstractProtocol();
-    virtual bool init() = 0;
+ //   virtual bool init() = 0;
 };
 
 #endif // PROTOCOL_H

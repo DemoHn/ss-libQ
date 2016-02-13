@@ -19,13 +19,15 @@ HEADERS += \
     tcprelay.h \
     udprelay.h \
     tcpserver.h \
-    cipher/ab_cipher.h
+    cipher/ab_cipher.h \
+    protocol/shadowsocks.h
 
 SOURCES += \
     controller.cpp \
     tcprelay.cpp \
     udprelay.cpp \
-    tcpserver.cpp
+    tcpserver.cpp \
+    protocol/shadowsocks.cpp
 
 win32 :{
     DESTDIR = $$PWD/../build

@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <sslibQ>
+
+#include "config.h"
 class Client : public QObject
 {
     Q_OBJECT
@@ -25,7 +27,7 @@ public:
     QString getMethod();
 */
     //run method
-    bool start();
+    bool start(Config &config);
 private:
 /*    QSS::Profile profile;*/
     Controller *ctl;

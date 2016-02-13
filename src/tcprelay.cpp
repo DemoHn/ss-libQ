@@ -1,41 +1,74 @@
 #include "tcprelay.h"
 
-TcpRelay::TcpRelay(AbstractProtocol *protocol,
-                   QTcpSocket *local,
-                   const bool is_local,
+TCPRelay::TCPRelay(AbstractProtocol *p,
+                   const bool _is_local,
                    QObject *parent) :
-
                     QObject(parent),
-                    protocol(protocol),
-                    local(local),
-                    is_local(is_local),
+                    is_local(_is_local),
+                    protocol(p),
                     stage(INIT)
 {
-    //timer = new QTimer(this);
-
+    local  = new QTcpSocket(this);
     remote = new QTcpSocket(this);
-    // connect local socket
-    connect(local, SIGNAL(readyRead()),this,SLOT(onLocalRead()));
+    server = new QTcpServer(this);
+
+    if(protocol)
+    {
+        //protocol params setting
+        local_address  = protocol->getLocalAddress();
+        local_port     = protocol->getLocalPort();
+
+        // remote <--> proxy server
+        remote_port    = protocol->getServerPort();
+        remote_address = protocol->getServerAddress();
+    }
+
+    //bind events
+    connect(server, SIGNAL(newConnection()), this, SLOT(handleLocalConnection()));
+    //local socket events
+    connect(local, SIGNAL(readyRead()), this, SLOT(onLocalRead()));
+    //remote socket events
+    connect(remote, SIGNAL(readyRead()),this, SLOT(onRemoteRead()));
 }
 
-TcpRelay::~TcpRelay()
+TCPRelay::~TCPRelay()
 {
+    // close socket
+    TCPRelay::close();
 
+    server->deleteLater();
+    local->deleteLater();
+    remote->deleteLater();
 }
 
-void TcpRelay::close()
+bool TCPRelay::listen()
+{
+    return server->listen(local_address, local_port);
+}
+
+void TCPRelay::close()
 {
     local->close();
     remote->close();
+
+    if(server->isListening())
+    {
+        server->close();
+    }
+}
+
+void TCPRelay::handleLocalConnection()
+{
+    local = server->nextPendingConnection();
 }
 
 // on local read
-void TcpRelay::onLocalRead()
+void TCPRelay::onLocalRead()
 {
-    qDebug() << "wtf";
+    qDebug() << "wtf local";
 }
 
-void TcpRelay::onRemoteRead()
+void TCPRelay::onRemoteRead()
 {
-
+    qDebug() << "wtf remote";
 }

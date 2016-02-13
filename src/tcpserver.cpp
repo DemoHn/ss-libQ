@@ -35,11 +35,17 @@ void TcpServer::handleConnection()
     QTcpSocket *conn = server->nextPendingConnection();
 
     connect(conn, SIGNAL(disconnected()) , conn, SLOT(deleteLater()));
+    connect(conn, SIGNAL(readyRead()), this, SLOT(readData()));
+}
 
-    qDebug() << conn->readAll();
+void TcpServer::readData()
+{
+    QTcpSocket *socket = qobject_cast<QTcpSocket *>(sender());
 
-    QByteArray b('a',100);
-    conn->write(b,b.length());
-    conn->disconnectFromHost();
+    qDebug() << socket->readAll();
+
+    QByteArray b(10,'a');
+    socket->write(b);
+    socket->flush();
 }
 

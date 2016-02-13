@@ -8,7 +8,6 @@
  */
 
 #include <QCoreApplication>
-#include <QCommandLineParser>
 #include <signal.h>
 #include <QDebug>
 
@@ -28,6 +27,7 @@ static void onSIGINT_TREM(int sig)
 int main(int argc, char** argv)
 {
     QCoreApplication app(argc,argv);
+
     app.setApplicationName("sslibQ-cli");
     app.setApplicationVersion("0.1");
 
@@ -49,19 +49,14 @@ int main(int argc, char** argv)
 
     // read option and setup
     // be careful
-
     /* get config file name*/
     QString file = option.getOptionValue("c");
 
     CLI_MODE cli_mode = CLIENT;
-    PROXY_MODE proxy_mode = SOCKS;
+    //PROXY_MODE proxy_mode = SOCKS;
 
     Config config(file);
 
-    /*read config*/
-    if(!config.readConfig()){
-        return 1;
-    }
     /*determine cli_mode*/
     if(option.getOptionFlag("client"))
         cli_mode = CLIENT;
@@ -74,7 +69,8 @@ int main(int argc, char** argv)
     if(cli_mode == CLIENT){
        Client client;
        //client.setup(config.getProfile());
-       if(!client.start()){
+       if(!client.start(config)){
+           qDebug() << "start client FAILED!";
            return 1;
        }
     }else if(cli_mode == SERVER){

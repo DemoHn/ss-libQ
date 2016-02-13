@@ -7,6 +7,8 @@ TEMPLATE = app
 
 DEFINES += SSQ_LIB_STATIC
 
+CONFIG  += console
+
 HEADERS += client.h \
            config.h \
            getoption.h \

@@ -1,9 +1,15 @@
 #include "controller.h"
 
 Controller::Controller(AbstractProtocol *protocol, const MODE mode, QObject *parent) :
-    QObject(parent), server(nullptr), protocol(protocol), mode(mode)
+    QObject(parent), protocol(protocol), mode(mode)
 {
-
+    if(mode == CLIENT)
+    {
+        tcpRelay = new TCPRelay(protocol, true, this);
+    }else if(mode == SERVER)
+    {
+        tcpRelay = new TCPRelay(protocol, false, this);
+    }
 }
 
 Controller::~Controller()
@@ -13,11 +19,10 @@ Controller::~Controller()
 
 bool Controller::start()
 {
-    server = new TcpServer(this);
-    return server->start(1234);
+    return tcpRelay->listen();
 }
 
 void Controller::stop()
 {
-
+    tcpRelay->close();
 }
