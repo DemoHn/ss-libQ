@@ -19,6 +19,8 @@ HEADERS += \
     tcprelay.h \
     udprelay.h \
     tcpserver.h \
+    asyncdns.h \
+    buffer.h \
     cipher/ab_cipher.h \
     protocol/shadowsocks.h
 
@@ -27,6 +29,8 @@ SOURCES += \
     tcprelay.cpp \
     udprelay.cpp \
     tcpserver.cpp \
+    asyncdns.cpp \
+    buffer.cpp \
     protocol/shadowsocks.cpp
 
 win32 :{

@@ -9,6 +9,8 @@
 #include "export.h"
 #include <QTcpServer>
 
+#define SOCKS5_VER 5
+
 class SSQ_EXPORT TCPRelay : public QObject
 {
     Q_OBJECT
@@ -22,6 +24,10 @@ public:
     ~TCPRelay();
     bool listen();
     void close();
+
+    void handleStageAddr(QByteArray &data);
+
+    void parseSocksHeader(const QByteArray &data, QString &dest_addr, quint16 port, int &header_length);
 private:
     QTcpSocket *local;
     QTcpSocket *remote;
