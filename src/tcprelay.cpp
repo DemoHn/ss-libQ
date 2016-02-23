@@ -238,10 +238,10 @@ QByteArray TCPRelay::build_connect_reply()
     //ipv4
     if(addr.protocol() == QAbstractSocket::IPv4Protocol)
     {
-        atyp = ATYP::IPV4;
+        atyp = IPV4;
         return Utils::pack("BBBBIH", 5, 0, 0, atyp, addr.toIPv4Address(), port);
     }else{ // ipv6
-        atyp = ATYP::IPV6;
+        atyp = IPV6;
         Q_IPV6ADDR ipv6_addr = addr.toIPv6Address();
         QByteArray ipv6_addr_buf(reinterpret_cast<char*>(ipv6_addr.c), 16);
 
@@ -260,13 +260,13 @@ void TCPRelay::parseSocksHeader(const QByteArray &data, SocksHeader * s_header)
     uint    *header_len  = &(s_header->header_length);
 
     QByteArray ip_buf;
-    if(type == ATYP::HOST)
+    if(type == HOST)
     {
         if(data.length() > 2)
         {
             *header_len = Utils::unpack("BB[&2]H", data, atyp, dest_addr, dest_port);
         }
-    }else if(type == ATYP::IPV4)
+    }else if(type == IPV4)
     {
         if(data.length() >= 7)
         {
@@ -274,7 +274,7 @@ void TCPRelay::parseSocksHeader(const QByteArray &data, SocksHeader * s_header)
             *dest_addr = Utils::parseIP(ip_buf);
         }
 
-    }else if(type == ATYP::IPV6)
+    }else if(type == IPV6)
     {
        // IPV6 TODO
     }
