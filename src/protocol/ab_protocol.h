@@ -13,6 +13,7 @@
 
 #include <QJsonDocument>
 #include <QHostAddress>
+
 class AbstractProtocol {
 
 public:
@@ -24,6 +25,9 @@ public:
     };
     virtual QByteArray pack(const QByteArray &ip_address,const quint16 port,const QByteArray &in) = 0;
     virtual Package unpack(const QByteArray &in) = 0;
+
+    virtual QByteArray encrypt(QByteArray &data) = 0;
+    virtual QByteArray decrypt(QByteArray &data) = 0;
 
     virtual QString getProtocolName() = 0;
 

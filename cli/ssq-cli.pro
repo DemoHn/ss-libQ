@@ -12,12 +12,14 @@ CONFIG  += console
 HEADERS += client.h \
            config.h \
            getoption.h \
-           main.h
+           main.h \
+    server.h
 
 SOURCES +=  client.cpp \
             config.cpp \
             getoption.cpp \
-            main.cpp
+            main.cpp \
+    server.cpp
 
 INCLUDEPATH += $$PWD/../src
 

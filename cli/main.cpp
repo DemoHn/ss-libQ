@@ -17,6 +17,7 @@
 #include "config.h"
 
 #include "client.h"
+#include "server.h"
 
 static void onSIGINT_TREM(int sig)
 {
@@ -74,7 +75,12 @@ int main(int argc, char** argv)
            return 1;
        }
     }else if(cli_mode == SERVER){
-
+        Server server;
+        if(!server.start(config))
+        {
+            qDebug() << "start server FAILED!";
+            return 1;
+        }
     }else if(cli_mode == REDIR){
 
     }else{

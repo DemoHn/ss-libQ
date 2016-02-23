@@ -20,9 +20,9 @@ HEADERS += \
     udprelay.h \
     tcpserver.h \
     asyncdns.h \
-    buffer.h \
     cipher/ab_cipher.h \
-    protocol/shadowsocks.h
+    protocol/shadowsocks.h \
+    utils.h
 
 SOURCES += \
     controller.cpp \
@@ -30,8 +30,8 @@ SOURCES += \
     udprelay.cpp \
     tcpserver.cpp \
     asyncdns.cpp \
-    buffer.cpp \
-    protocol/shadowsocks.cpp
+    protocol/shadowsocks.cpp \
+    utils.cpp
 
 win32 :{
     DESTDIR = $$PWD/../build

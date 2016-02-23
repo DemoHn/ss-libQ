@@ -1,12 +1,12 @@
-#include "client.h"
-#include "config.h"
+#include "server.h"
 #include "protocol/shadowsocks.h"
-Client::Client(QObject *parent) : QObject(parent),ctl(nullptr)
+
+Server::Server(QObject *parent) : QObject(parent),ctl(nullptr)
 {
 
 }
 
-bool Client::start(Config &config){
+bool Server::start(Config &config){
     //remove original controller instance
     if (ctl) {
        ctl->deleteLater();
@@ -16,9 +16,10 @@ bool Client::start(Config &config){
     QJsonObject c = config.parseConfig();
 
     AbstractProtocol *p = new Shadowsocks(c);
-    ctl = new Controller(p);
+    ctl = new Controller(p, Controller::MODE::SERVER, this);
 
-    std::cout << std::endl << "[LOG] start Client " << std::endl;
+    std::cout << std::endl << "[LOG] start Server " << std::endl;
 
     return ctl->start();
 }
+

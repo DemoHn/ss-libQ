@@ -1,43 +1,23 @@
-#include "buffer.h"
+#include "utils.h"
 
-Buffer::Buffer(const char * buf, unsigned int size) : QByteArray(buf, size)
+// parse ipv4 address
+QString Utils::parseIP(QByteArray &ip_addr)
 {
+    if(ip_addr.size() != 4){
+        return QString("0.0.0.0");
+    }
 
+    QString str = QString("%1.%2.%3.%4").arg(static_cast<uchar>(ip_addr.at(0)), 0, 10)
+                                 .arg(static_cast<uchar>(ip_addr.at(1)), 0, 10)
+                                 .arg(static_cast<uchar>(ip_addr.at(2)), 0, 10)
+                                 .arg(static_cast<uchar>(ip_addr.at(3)), 0, 10);
+    return str;
 }
 
-Buffer::Buffer(unsigned int length) : QByteArray(length, '\0')
+
+QByteArray Utils::pack(const char * fmt, ...)
 {
-
-}
-
-Buffer::Buffer(const Buffer &buf)
-{
-    *this = buf;
-}
-
-Buffer::Buffer()
-{
-
-}
-
-Buffer Buffer::operator =(QByteArray data)
-{
-    uint _size = data.size();
-    const char * dat = data.data();
-    Buffer buf(dat, _size);
-    return buf;
-}
-
-/*
- * H : 2 bit (unsigned short)
- * B : 1 bit (unsigned char)
- * I : 4 bit (unsigned int)
- * X : N bit (char* end up with '\0')
- * x : N bit (Buffer)
- */
-Buffer Buffer::pack(const char * fmt, ...)
-{
-    Buffer rtn_buf(0);
+    QByteArray rtn_buf(0);
     uchar *cs = new uchar[4];
     const char *str = NULL;
     va_list args;
@@ -64,7 +44,7 @@ Buffer Buffer::pack(const char * fmt, ...)
         }
 
         if(*fmt == 'x'){
-            Buffer new_buf(va_arg(args, Buffer));
+            QByteArray new_buf(va_arg(args, QByteArray));
             rtn_buf.append(new_buf);
         }
         if(*fmt == 'I'){
@@ -80,6 +60,7 @@ Buffer Buffer::pack(const char * fmt, ...)
     va_end(args);
     return rtn_buf;
 }
+
 
 /*
 unpack:
@@ -97,7 +78,7 @@ e.g. :
 "HB[2]I[&3]" --> refers to the value of "I" format data. "[2]" is not counted when calculating the order.
 */
 
-unsigned int Buffer::unpack(const char * fmt,const Buffer &buf, ...)
+unsigned int Utils::unpack(const char * fmt,const QByteArray &buf, ...)
 {
     va_list args;
     va_start(args, buf);
@@ -157,7 +138,7 @@ unsigned int Buffer::unpack(const char * fmt,const Buffer &buf, ...)
                 ++fmt;
             }
 
-            Buffer* buf_ptr = va_arg(args,Buffer*);
+            QByteArray* buf_ptr = va_arg(args,QByteArray*);
 
             if(ref_flag == true)
             {
@@ -177,7 +158,7 @@ unsigned int Buffer::unpack(const char * fmt,const Buffer &buf, ...)
     return offset;
 }
 
-unsigned int Buffer::unpack(const char * fmt, char * data, ...)
+unsigned int Utils::unpack(const char * fmt, char * data, ...)
 {
     va_list args;
     va_start(args, data);
@@ -237,7 +218,7 @@ unsigned int Buffer::unpack(const char * fmt, char * data, ...)
                 ++fmt;
             }
 
-            Buffer* buf_ptr = va_arg(args,Buffer*);
+            QByteArray* buf_ptr = va_arg(args,QByteArray*);
 
             if(ref_flag == true)
             {
@@ -256,12 +237,4 @@ unsigned int Buffer::unpack(const char * fmt, char * data, ...)
     arg_list.clear();
     va_end(args);
     return offset;
-}
-
-QString Buffer::toQString()
-{
-    std::string str = this->toStdString();
-    QString qs = QString::fromStdString(str);
-
-    return qs;
 }

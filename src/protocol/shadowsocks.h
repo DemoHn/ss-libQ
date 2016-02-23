@@ -28,6 +28,9 @@ protected:
     QByteArray pack(const QByteArray &ip_address, const quint16 port, const QByteArray &in);
     AbstractProtocol::Package  unpack(const QByteArray &in);
 
+    QByteArray encrypt(QByteArray &data);
+    QByteArray decrypt(QByteArray &data);
+
     QString getProtocolName();
 private:
     QString local_address;

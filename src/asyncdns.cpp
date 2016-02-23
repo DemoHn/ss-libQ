@@ -1,4 +1,5 @@
 #include "asyncdns.h"
+#include "utils.h"
 
 AsyncDNS::AsyncDNS(QObject *parent) : QObject(parent)
 {
@@ -61,7 +62,7 @@ QString AsyncDNS::build_address(QString address, int direction)
     }
 }
 
-Buffer AsyncDNS::build_request(QString address, ushort qtype, ushort request_id)
+QByteArray AsyncDNS::build_request(QString address, ushort qtype, ushort request_id)
 {
     /*
     * DNS header
@@ -120,10 +121,10 @@ Buffer AsyncDNS::build_request(QString address, ushort qtype, ushort request_id)
      */
 
     QString fmt_address = build_address(address);
-    Buffer header    = Buffer::pack("HBBHHHH",request_id, 1, 0, 1, 0, 0, 0);
-    Buffer question  = Buffer::pack("XBHH", fmt_address.toStdString().c_str(), '\0', qtype, QCLASS::IN);
+    QByteArray header    = Utils::pack("HBBHHHH",request_id, 1, 0, 1, 0, 0, 0);
+    QByteArray question  = Utils::pack("XBHH", fmt_address.toStdString().c_str(), '\0', qtype, QCLASS::IN);
 
-    Buffer send_data = Buffer::pack("xx",header,question);
+    QByteArray send_data = Utils::pack("xx",header,question);
     return send_data;
 }
 
@@ -134,7 +135,7 @@ QUdpSocket * AsyncDNS::getSocket()
 
 unsigned int AsyncDNS::parse_RR(char * response_data, DNS_RR *rr)
 {
-    return Buffer::unpack("HHHIH[&5]",response_data,
+    return Utils::unpack("HHHIH[&5]",response_data,
                    &(rr->name),
                    &(rr->type),
                    &(rr->rclass),
@@ -143,7 +144,7 @@ unsigned int AsyncDNS::parse_RR(char * response_data, DNS_RR *rr)
                    &(rr->rdata));
 }
 
-unsigned int AsyncDNS::parse_RR(Buffer &response_data, DNS_RR *rr)
+unsigned int AsyncDNS::parse_RR(QByteArray &response_data, DNS_RR *rr)
 {
     char * dat = response_data.data();
     return parse_RR(dat, rr);
@@ -151,7 +152,7 @@ unsigned int AsyncDNS::parse_RR(Buffer &response_data, DNS_RR *rr)
 
 unsigned int AsyncDNS::parse_header(char * response_data, DNSHeader *header)
 {
-    return Buffer::unpack("HBBHHHH",response_data,
+    return Utils::unpack("HBBHHHH",response_data,
                    &(header->request_id),
                    &(header->flag),
                    &(header->rcode),
@@ -161,7 +162,7 @@ unsigned int AsyncDNS::parse_header(char * response_data, DNSHeader *header)
                    &(header->ar_count));
 }
 
-unsigned int AsyncDNS::parse_header(Buffer &response_data, DNSHeader *header)
+unsigned int AsyncDNS::parse_header(QByteArray &response_data, DNSHeader *header)
 {
     char * dat = response_data.data();
     return parse_header(dat, header);
@@ -176,22 +177,22 @@ unsigned int AsyncDNS::parse_question(char *response_data, DNS_QD *question)
         offset += 1;
     }
 
-    Buffer hostdata(0);
+    QByteArray hostdata(0);
     // why +1 ?
     // because actual host data has an additional '\0' represents for the end of string.
     QString unpack_fmt = QString("[%1]HH").arg(offset + 1);
 
-    len = Buffer::unpack(unpack_fmt.toStdString().c_str(), response_data,
+    len = Utils::unpack(unpack_fmt.toStdString().c_str(), response_data,
                    &hostdata,
                    &(question->qtype),
                    &(question->qclass));
 
-    question->host = build_address(hostdata.toQString(), FROM_QS);
+    question->host = build_address(QString::fromStdString(hostdata.toStdString()), FROM_QS);
 
     return len;
 }
 
-QString AsyncDNS::parse_ip(Buffer &ip_buf)
+QString AsyncDNS::parse_ip(QByteArray &ip_buf)
 {
     if(ip_buf.size() != 4){
         return QString("0.0.0.0");
@@ -207,7 +208,7 @@ QString AsyncDNS::parse_ip(Buffer &ip_buf)
 // public method
 void AsyncDNS::handleReadData()
 {
-    Buffer datagram;
+    QByteArray datagram;
     QString host;
     QList<QHostAddress> host_set;
 
@@ -279,7 +280,7 @@ void AsyncDNS::sendDNSRequest(QString address)
             return ;
         }
     }
-    Buffer req = build_request(address, QTYPE::A, 3);
+    QByteArray req = build_request(address, QTYPE::A, 3);
     socket->writeDatagram(req, DNS_server, DNS_port);
 }
 

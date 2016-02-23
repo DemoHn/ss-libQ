@@ -24,6 +24,8 @@ public:
     static Buffer pack(const char * fmt, ...);
     static unsigned int unpack(const char * fmt, const Buffer &data, ...);
     static unsigned int unpack(const char * fmt, char * data, ...);
+
+    Buffer operator =(QByteArray data);
 };
 
 #endif // BUFFER_H

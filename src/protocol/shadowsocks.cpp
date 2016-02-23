@@ -100,6 +100,18 @@ AbstractProtocol::Package Shadowsocks::unpack(const QByteArray &in)
     return p;
 }
 
+QByteArray Shadowsocks::encrypt(QByteArray &data)
+{
+    QByteArray buf(data);
+    return buf;
+}
+
+QByteArray Shadowsocks::decrypt(QByteArray &data)
+{
+    QByteArray buf(data);
+    return buf;
+}
+
 
 
 

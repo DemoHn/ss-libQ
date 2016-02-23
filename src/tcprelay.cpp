@@ -1,6 +1,7 @@
 #include "tcprelay.h"
 #include <cstdlib>
-#include <QtEndian>
+#include "utils.h"
+
 TCPRelay::TCPRelay(AbstractProtocol *p,
                    const bool _is_local,
                    QObject *parent) :
@@ -20,14 +21,15 @@ TCPRelay::TCPRelay(AbstractProtocol *p,
         local_port     = protocol->getLocalPort();
 
         // remote <--> proxy server
-        remote_port    = protocol->getServerPort();
-        remote_address = protocol->getServerAddress();
+        server_port    = protocol->getServerPort();
+        server_address = protocol->getServerAddress();
+
     }
 
+    QHostAddress google_dns("8.8.8.8");
+    DNSResolver = new AsyncDNS(google_dns);
     //bind events
     connect(server, SIGNAL(newConnection()), this, SLOT(handleLocalConnection()));
-    //remote socket events
-    connect(remote, SIGNAL(readyRead()),this, SLOT(onRemoteRead()));
 }
 
 TCPRelay::~TCPRelay()
@@ -42,8 +44,12 @@ TCPRelay::~TCPRelay()
 
 bool TCPRelay::listen()
 {
-    bool r = server->listen(local_address, local_port);
-    return r;
+    if(is_local)
+    {
+        return server->listen(local_address, local_port);
+    }else{
+        return server->listen(server_address, server_port);
+    }
 }
 
 void TCPRelay::close()
@@ -55,6 +61,7 @@ void TCPRelay::close()
 
     local->close();
     remote->close();
+    DNSResolver->deleteLater();
     stage = DESTROYED;
 }
 
@@ -71,24 +78,29 @@ void TCPRelay::onLocalRead()
 {
     QTcpSocket *sock = qobject_cast<QTcpSocket *>(sender());
     // just debug
-    QByteArray res = sock->readAll();
-    qDebug() << "length: " << res.length() << " ";
-    qDebug() << res;
 
-    const static char _accept [] = {5 ,0};
-    const static char _reject [] = {0, 91};
+    QByteArray dat = sock->readAll();
 
-    const static QByteArray accept(_accept,2);
-    const static QByteArray reject(_reject,2);
-    if(res.length() == 0)
+    const QByteArray accept = Utils::pack("BB", 5, 0);
+    const QByteArray reject = Utils::pack("BB", 0, 91);
+
+    if(dat.length() == 0)
     {
         qDebug() << "empty request data , bye =w=";
     }
 
-    if(!is_local && stage == INIT)
+    if(!is_local)
     {
-        stage = ADDR;
-    }else if(stage == INIT) {
+        //decrypt data
+    }
+
+    // stages
+    if(stage == STREAM)
+    {
+
+    }
+    else if(is_local && stage == INIT)
+    {
         // SOCKS5 Protocol
         /*
          * 01. REQUEST VERSION IDF FROM CLIENT:
@@ -106,7 +118,7 @@ void TCPRelay::onLocalRead()
            +----+--------+
          */
 
-        char _ver = res[0];
+        char _ver = dat[0];
 
         //if not socks5
         if(_ver != SOCKS5_VER){
@@ -116,56 +128,36 @@ void TCPRelay::onLocalRead()
         }else{
             sock->write(accept);
             stage = ADDR;
+            return ;
         }
     }
-
-    if(stage == ADDR)
+    else if(stage == CONNECTING)
     {
-        handleStageAddr(res);
+        handleStageConnecting();
     }
-
-
+    else if( (is_local && stage == ADDR) || (!is_local && stage == INIT) )
+    {
+        handleStageAddr(dat);
+    }
 //    sock->close();
 }
 
+// private methods
 void TCPRelay::handleStageAddr(QByteArray &data)
 {
     if(is_local)
     {
         int cmd = static_cast<int>(data[1]);
 
-        if(cmd == 3)
+        if(cmd == CMD_UDP_ASSOC)
         {
-            static const char _header [] = {5, 0, 0};
-            static const QByteArray header(_header,3);
-
-            QHostAddress addr = local->localAddress();
-            quint16 port      = local->localPort();
-
-            QByteArray addr_bin, port_ns;
-            char type_c;
-            port_ns.resize(2);
-            // to byte array
-            qToBigEndian(port, reinterpret_cast<uchar*>(port_ns.data()));
-
-            if(addr.protocol() == QAbstractSocket::IPv4Protocol)
-            {
-                quint32 ipv4_addr = qToBigEndian(addr.toIPv4Address());
-                addr_bin = QByteArray(reinterpret_cast<char*>(&ipv4_addr), 4);
-                type_c = 1;
-            }else{
-                type_c = 4;
-                Q_IPV6ADDR ipv6_addr = addr.toIPv6Address();
-                addr_bin = QByteArray(reinterpret_cast<char*>(ipv6_addr.c), 16);
-            }
-            QByteArray b;
-            b = header + type_c + addr_bin + port_ns;
-            qDebug() << b;
-            local->write(header + type_c + addr_bin + port_ns);
+            QByteArray CR = build_connect_reply();
+            local->write(CR);
             stage = UDP_ASSOC;
             return ;
-        }else if(cmd == 1){
-            data = data.mid(3);
+        }else if(cmd == CMD_TCP_CONNECT){
+            /*TCP/IP stream connection*/
+            data.mid(3);
         }else{
             qDebug() << "unknown command " + QString::number(cmd);
             close();
@@ -174,51 +166,123 @@ void TCPRelay::handleStageAddr(QByteArray &data)
     }
 
     // parse header
-    int header_length = 0;
+    SocksHeader header;
+    parseSocksHeader(data, &header);
+
     stage = DNS;
     if(is_local){
-        static const char _response [] = { 5 , 0 , 0 , 1 , 0 , 0 , 0 , 0 , 16 , 16 };
-        static const QByteArray response(_response, 10);
+        const QByteArray DNS_response = Utils::pack("BBBBIBB", 5, 0, 0, 1, 0, 16, 16);
+        local->write(DNS_response);
+        //encrypt the DNS request
 
-        local->write(response);
+        QByteArray dataToSend = protocol->encrypt(data);
+
+        qDebug() << "- data to send : " << dataToSend;
+        createRemoteSocket(server_address, server_port, dataToSend);
+
     }
 }
 
-void TCPRelay::parseSocksHeader(const QByteArray &data, QString &dest_addr, quint16 port, int &header_length)
+void TCPRelay::handleStageConnecting()
 {
-    char atyp = data[0];
-    int addrtype = static_cast<int>(atyp & 0x0f);
-    header_length = 0;
+    // TODO
+}
 
-    // address type
-    // HOST
-    if(addrtype == 3){
-        if(data.length() > 2){
-            quint8 addrlen = static_cast<quint8>(data[1]);
-            if(data.size() >= 2 + addrlen){
-                port = qFromBigEndian(*reinterpret_cast<const quint16 *>(data.data() + 2 + addrlen));
+void TCPRelay::createRemoteSocket(QHostAddress address, quint16 port, QByteArray &data)
+{
+    remote = new QTcpSocket(this);
+    qDebug() << "address: " << address;
 
-                dest_addr = (data.mid(2, addrlen));
-            }
+    remote->connectToHost(address, port);
+
+    qDebug() << "new remote start";
+
+    connect(remote, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(showCurrentState(QAbstractSocket::SocketState)));
+    connect(remote, SIGNAL(readyRead()), this, SLOT(onRemoteRead()));
+    connect(remote, SIGNAL(connected()), this, SLOT(onRemoteWrite()));
+
+    send_data = data;
+}
+
+void TCPRelay::onRemoteWrite()
+{
+    qDebug() << "write data to remote";
+    qDebug() << "write data: " << send_data;
+    if(send_data.length() > 0){
+        remote->write(send_data);
+        send_data.clear();
+        remote->close();
+    }
+}
+
+// debug
+void TCPRelay::showCurrentState(QAbstractSocket::SocketState state)
+{
+    qDebug() << "new state: " << state << "\n";
+}
+
+QByteArray TCPRelay::build_connect_reply()
+{
+/*  connect reply format
+    +----+-----+-------+------+----------+----------+
+    |VER | REP |  RSV  | ATYP | DST.ADDR | DST.PORT |
+    +----+-----+-------+------+----------+----------+
+    | 1  |  1  | X'00' |  1   | Variable |    2     |
+    +----+-----+-------+------+----------+----------+
+*/
+    QHostAddress addr = local->localAddress();
+    quint16 port      = local->localPort();
+
+    uint atyp;
+
+    //ipv4
+    if(addr.protocol() == QAbstractSocket::IPv4Protocol)
+    {
+        atyp = ATYP::IPV4;
+        return Utils::pack("BBBBIH", 5, 0, 0, atyp, addr.toIPv4Address(), port);
+    }else{ // ipv6
+        atyp = ATYP::IPV6;
+        Q_IPV6ADDR ipv6_addr = addr.toIPv6Address();
+        QByteArray ipv6_addr_buf(reinterpret_cast<char*>(ipv6_addr.c), 16);
+
+        return Utils::pack("BBBBxH", 5, 0, 0, atyp, ipv6_addr_buf, port);
+    }
+}
+
+void TCPRelay::parseSocksHeader(const QByteArray &data, SocksHeader * s_header)
+{
+    int type = data[0];
+
+    /* struct variables*/
+    char    *atyp        = &(s_header->atyp);
+    QString *dest_addr   = &(s_header->dest_addr);
+    quint16 *dest_port   = &(s_header->dest_port);
+    uint    *header_len  = &(s_header->header_length);
+
+    QByteArray ip_buf;
+    if(type == ATYP::HOST)
+    {
+        if(data.length() > 2)
+        {
+            *header_len = Utils::unpack("BB[&2]H", data, atyp, dest_addr, dest_port);
         }
-    }else if(addrtype == 1){
+    }else if(type == ATYP::IPV4)
+    {
         if(data.length() >= 7)
         {
-            dest_addr =  (qFromBigEndian(*reinterpret_cast<const quint32 *> (data.data() + 1)));
-            if(!dest_addr.isNull())
-            {
-                header_length = 7;
-                port = qFromBigEndian(*reinterpret_cast<const quint16 *>(data.data() + 5));
-            }
-
+            *header_len = Utils::unpack("B[4]H", data, atyp, &ip_buf, dest_port);
+            *dest_addr = Utils::parseIP(ip_buf);
         }
-    // IPV6 TODO
-    }else if(addrtype == 4){
 
+    }else if(type == ATYP::IPV6)
+    {
+       // IPV6 TODO
     }
 }
 
 void TCPRelay::onRemoteRead()
 {
+    qDebug() << remote->readAll();
     qDebug() << "wtf remote";
+    remote->close();
 }

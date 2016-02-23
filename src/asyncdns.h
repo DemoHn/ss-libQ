@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QHostAddress>
-#include "buffer.h"
+#include "QByteArray.h"
 #include <QUdpSocket>
 #include <QDebug>
 #include <cstring>
@@ -51,7 +51,7 @@ public:
         quint16 rclass;
         quint32 ttl;
         quint16 rdlength;
-        Buffer  rdata;
+        QByteArray  rdata;
     };
 
     explicit AsyncDNS(QObject *parent = 0);
@@ -64,16 +64,16 @@ public:
     QHostAddress getRandomIP(const QString &host);
     QUdpSocket * getSocket();
 private:
-    Buffer         build_request(QString address, ushort qtype, ushort request_id);
+    QByteArray         build_request(QString address, ushort qtype, ushort request_id);
     QString        build_address(QString address, int direction = TO_QS);
 
-    unsigned int   parse_RR(Buffer &response_data, DNS_RR *rr);
-    unsigned int   parse_header(Buffer &response_data, DNSHeader *header);
+    unsigned int   parse_RR(QByteArray &response_data, DNS_RR *rr);
+    unsigned int   parse_header(QByteArray &response_data, DNSHeader *header);
     unsigned int   parse_RR(char * response_data, DNS_RR *rr);
     unsigned int   parse_header(char * response_data, DNSHeader *header);
     unsigned int   parse_question(char * response_data, DNS_QD *question);
 
-    QString        parse_ip(Buffer &ip_buf);
+    QString        parse_ip(QByteArray &ip_buf);
     QUdpSocket *   socket;
     QHostAddress   DNS_server;
     quint16        DNS_port;
