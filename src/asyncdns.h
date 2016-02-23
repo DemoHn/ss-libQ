@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QHostAddress>
-#include "QByteArray.h"
+#include <QByteArray>
 #include <QUdpSocket>
 #include <QDebug>
 #include <cstring>
